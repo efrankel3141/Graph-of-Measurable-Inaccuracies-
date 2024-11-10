@@ -258,9 +258,9 @@ options = {
     'width': 1,
 }
 
-k = 4
+k = 6
 
-TestGraph = G_mi(k, 4, "General")
+TestGraph = G_mi(k, 1, "General")
 TestGraph.gen_total_nodes()
 TestGraph.initalize_graph()
 
@@ -270,7 +270,6 @@ TestGraph.populate_weights()
 Gr = TestGraph.get_graph()
 npl = TestGraph.get_npl()
 print("HERE")
-print(Gr.get_edge_data(38, 40).get("weight", None))
 
 # matrix_arr = np.array(TestGraph.get_weight_matrix())
 
