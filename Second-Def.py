@@ -9,10 +9,10 @@ class G_mi:
     # GRAPH INITIALIZER ->
     # [num of n-levels, nodes per level, construction-type]
     # -----------------------------------------------------
-    def __init__(self, n, npl, construction):
+    def __init__(self, n, k, construction):
         self.n = n
         self.construction = construction
-        self.npl = npl
+        self.k = k
 
     # -----------------------------------------------------
     # ADDITIONAL VARIABLES ->
@@ -24,7 +24,6 @@ class G_mi:
     nodes = list(G.nodes)
     edges = list(G.edges)
     weights = [[]]
-    total_nodes = 0
     # -----------------------------------------------------
     # GET NUM OF N-LEVELS
     # -----------------------------------------------------
@@ -41,8 +40,8 @@ class G_mi:
     # -----------------------------------------------------
     # GET NUM OF NODES PER N-LEVEL
     # -----------------------------------------------------
-    def get_npl(self):
-        return self.npl
+    def get_k(self):
+        return self.k
 
     # -----------------------------------------------------
     # GET LIST OF VERTICES (NODES)
@@ -69,22 +68,14 @@ class G_mi:
         return self.G
 
     # -----------------------------------------------------
+    # /////////////////////////////////////////////////////
     # -----------------------------------------------------
 
     # -----------------------------------------------------
     # GET TOTAL NUM OF NODES
     # -----------------------------------------------------
     def get_total_nodes(self):
-        return self.total_nodes
-
-    # -----------------------------------------------------
-    # GENERATE GRAPH - (base)
-    # adds a "central" vertex as 0, and then adds all other
-    # nodes from the computed total nodes (dep. on n)
-    # -----------------------------------------------------
-    def initalize_graph(self):
-        self.G.add_node(0)
-        self.G.add_nodes_from(list(range(1, self.total_nodes)))
+        return sum([self.k*2**(i-1) for i in range(1, self.n+1)], 1)
 
     # -----------------------------------------------------
     # GENERATE ADJ. MATRIX - (based off specific graph)
@@ -93,8 +84,8 @@ class G_mi:
     # (\sum_{i=0}^n 2^{n-1})^2 or (total_nodes)^2
     # -----------------------------------------------------
     def populate_weights(self):
-        self.weights = [[0 for _ in range(self.total_nodes)]
-                        for _ in range(self.total_nodes)]
+        self.weights = [[0 for _ in range(self.get_total_nodes())]
+                        for _ in range(self.get_total_nodes())]
         for i in range(len(self.weights)):
 
             for j in range(len(self.weights[i])):
@@ -106,15 +97,6 @@ class G_mi:
 
                     self.weights[i][j] = weight
 
-    # -----------------------------------------------------
-    # GENERATE GRAPH - (base)
-    # adds a "central" vertex as 0, and then adds all other
-    # nodes from the computed total nodes (dep. on n)
-    # -----------------------------------------------------
-    def gen_total_nodes(self):
-        for i in range(0, self.n):
-            self.total_nodes += self.npl*(2**(i))
-
     def display_weights(self):
         matrix = ""
         for row in self.weights:
@@ -125,8 +107,8 @@ class G_mi:
         sub_matrix = ""
         index = 0
         for row in self.weights:
-            if index > self.npl*(2**(r)):
-                sub_matrix += str(row[self.npl*(2**(r))+1:])+"\n"
+            if index > self.k*(2**(r)):
+                sub_matrix += str(row[self.k*(2**(r))+1:])+"\n"
             index += 1
             # print(index)
         return sub_matrix
@@ -138,101 +120,46 @@ class G_mi:
     # based on choice of construction, the function builds
     # the appropriate model of G_mi to your specs.
     # -----------------------------------------------------
-    def construct_graph(self, k, p_nodes):
-        edges = []
+    def construct_graph(self, m, edges):
+        t = self.get_total_nodes() - 1
+        self.G.add_node(0)
+        self.G.add_nodes_from(list(range(1, t+1)))
+        print(self.G.nodes)
+        print(edges)
 
-        if k == 1:
-            for i in range(1, len(self.G.nodes)+1):
-                edges.append((0, i, {"weight": 1}))
-            self.G.add_edges_from(edges)
+        if m == 1:
+            print("REACHED-1")
+            for i in range(1, t+1):
+                edges.append((0, i))
+            return self.construct_graph(m+1, edges)
 
-            # print("l_1:" + str(self.G.edges))
-            return self.construct_graph(k+1, list(range(1, 29)))
+        elif m == 2:
+            print("REACHED-2")
+            for i in range(k+2*(0)+1, t, 2):
+                edges.append((i, i+1))
+            return self.construct_graph(m+1, edges)
 
-        elif k == 2:
-            for i in range(self.npl+1, self.total_nodes, 2):
-                edges.append((i, i+1, {"weight": 1}))
-            self.G.add_edges_from(edges)
+        elif m == 3:
+            j = self.k*(2**(m-1)-1)+2
+            print(f"REACHED-{m}")
+            print(f"j is {j}")
+            for i in range(j, t, 4):
+                print(f"i is: {i}")
+                edges.append((i, i+(2**(m-2)-1)))
+            return self.construct_graph(m+1, edges)
 
-            # print("l_2:" + str(self.G.edges))
-            return self.construct_graph(k+1, list(range(1, 29)))
+        elif m <= self.n:
+            j = self.k*(2**(m-1)-1)+(2**(m-2)-1)
+            print(f"REACHED-{m}")
+            print(f"j is {j}")
+            step = 2**(m-3)+2**(m-2)
+            print(step)
+            for i in range(j, t, step):
+                print(f"i is: {i}")
+                edges.append((i, i+(2**(m-2)-1)))
+            return self.construct_graph(m+1, edges)
 
-        elif k <= self.n:
-            lower = 0
-            subgraphs = []
-            edges = []
-
-            sub_A = []
-            sub_B = []
-            a_p = 0
-            b_p = 0
-
-            lower = sum(self.npl * (2 ** m) for m in range(k - 1, self.n))
-
-            subgraphs = [
-                list(range(j, j + 2 ** (k - 2)))
-                for j in range((self.total_nodes - lower) + 1, self.total_nodes, 2 ** (k - 2))
-            ]
-
-            updated_p = [x + self.npl*(2**(k-2)) for x in p_nodes]
-            print(updated_p)
-
-            temp_p_nodes = []
-            for i in range(0, len(subgraphs) - 1, 2):
-                sub_A, sub_B = subgraphs[i], subgraphs[i + 1]
-
-                a_p = next((a for a in sub_A if a in updated_p), None)
-                b_p = next((b for b in sub_B if b in updated_p), None)
-
-                if a_p is not None and b_p is not None:
-                    temp_p_nodes.extend([a_p, b_p])
-                    print(f"Principal nodes are: a_p: {a_p} and b_p: {b_p}")
-
-                    # Add the edge between a_p and b_p
-                    self.G.add_edge(a_p, b_p, weight=1)
-
-                for a in sub_A:
-                    if a == a_p:
-                        for b in sub_B:
-                            if b != b_p:
-                                weight = (len(nx.shortest_path(
-                                    self.G, source=b, target=b_p))-1) + 1
-                                print("not b_p, yes a_p | b->b_p")
-                                print(
-                                    (len(nx.shortest_path(self.G, source=b, target=b_p))-1))
-
-                                print("b: "+str(weight), str(a)+"->"+str(b))
-                                edges.append((a_p, b, {"weight": weight}))
-                            else:
-                                continue
-                    else:
-                        print(a)
-                        for b in sub_B:
-                            if b != b_p:
-                                weight = (len(nx.shortest_path(
-                                    self.G, source=b, target=b_p))-1) + (len(nx.shortest_path(
-                                        self.G, source=a, target=a_p))-1) + 1
-                                print("not b_p, not a_p | a->b")
-                                print((len(nx.shortest_path(
-                                    self.G, source=b, target=b_p))-1))
-                                print(" + ")
-                                print((len(nx.shortest_path(
-                                    self.G, source=a, target=a_p))-1))
-
-                                print("b: "+str(weight), str(a)+"->"+str(b))
-                                edges.append((a, b, {"weight": weight}))
-                            else:
-                                weight = (len(nx.shortest_path(
-                                    self.G, source=a, target=a_p))-1) + 1
-
-                                print("yes b_p, not a_p | a->a_p")
-                                print((len(nx.shortest_path(
-                                    self.G, source=a, target=a_p))-1))
-                                print("a: "+str(weight), str(a)+"->"+str(b_p))
-                                edges.append((a, b, {"weight": weight}))
-
-            self.G.add_edges_from(edges)
-            return self.construct_graph(k+1, temp_p_nodes)
+        self.G.add_edges_from(edges)
 
     def count_weight_1_edges(self, node):
         return sum(1 for _, neighbor, data in self.G.edges(node, data=True) if data["weight"] == 1)
@@ -244,7 +171,7 @@ class G_mi:
         info_string = f"G_mi Graph Info \n"
         info_string += f"--------------------\n"
         info_string += f"n-levels: {self.n}\n"
-        info_string += f"nodes per level: {self.npl}\n"
+        info_string += f"nodes per level: {self.k}\n"
         info_string += f"construction: {self.construction}\n"
         info_string += f"total nodes: {self.get_total_nodes()}\n"
         info_string += f"weighted adjacency matrix: \n\n"
@@ -254,62 +181,62 @@ class G_mi:
 
 options = {
     'node_color': 'black',
-    'node_size': 100,
+    'node_size': 80,
     'width': 1,
 }
 
-k = 6
+n = 5
+k = 4
 
-TestGraph = G_mi(k, 1, "General")
-TestGraph.gen_total_nodes()
-TestGraph.initalize_graph()
+TestGraph = G_mi(n, k, "General")
 
-TestGraph.construct_graph(1, list(range(1, 29)))
+TestGraph.construct_graph(1, [])
 TestGraph.populate_weights()
 
 Gr = TestGraph.get_graph()
-npl = TestGraph.get_npl()
+kr = TestGraph.get_k()
 print("HERE")
 
-# matrix_arr = np.array(TestGraph.get_weight_matrix())
-
-# np.savetxt("matrix2.csv", matrix_arr, delimiter=",", fmt="%d")
-
-
-shells = [[0], list(range(1, (npl*2**0)+1))]
+shells = [[0], list(range(1, (kr*2**0)+1))]
 
 for i in range(1, k+1):
-    start = sum(npl * (2**j) for j in range(i))
-    end = start + npl * (2**i)
+    start = sum(kr * (2**j) for j in range(i))
+    end = start + kr * (2**i)
     shells.append(list(range(start + 1, end + 1)))
 
 pos = {}
 
-radii = list(range(0, TestGraph.get_n()+2))
+radii = list(range(0, TestGraph.get_n()+3))
+print("CHECK")
+print(len(radii))
 
 shell_angles = []
 
-weight_to_color = {
-    1: 'black',
-    2: 'black',
-    3: 'black',
-}
+# weight_to_color = {
+#     1: 'black',
+#     2: 'black',
+#     3: 'black',
+# }
 
-edge_colors = [weight_to_color.get(data['weight'], 'black')
-               for u, v, data in Gr.edges(data=True)]
+# edge_colors = [weight_to_color.get(data['weight'], 'black')
+#                for u, v, data in Gr.edges(data=True)]
 
 for i, shell in enumerate(shells):
     radius = radii[i]
     num_nodes = len(shell)
     angles = np.linspace(0, 2.0 * np.pi, num_nodes,
-                         endpoint=False) + np.pi/2**radius+((np.pi/5)*radius*(radius-1))
+                         endpoint=False) + (np.pi/2**radius+((np.pi/5)*radius*(radius-1)))-(np.pi/2)
     shell_angles.append(angles)
 
     for j, node in enumerate(shell):
         pos[node] = (radius * np.cos(shell_angles[i][j]),
                      radius * np.sin(shell_angles[i][j]))
 
-nx.draw(Gr, pos, edge_color=edge_colors, with_labels=False, **options)
+plt.figure(figsize=(7, 7))
+nx.draw(Gr, pos, with_labels=True, font_size=5,
+        font_weight='bold', font_color='white', ** options)
+
+# edge_color=edge_colors
 
 print(TestGraph)
 plt.show()
