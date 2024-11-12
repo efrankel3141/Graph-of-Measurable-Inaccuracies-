@@ -248,7 +248,7 @@ class G_mi:
         info_string += f"construction: {self.construction}\n"
         info_string += f"total nodes: {self.get_total_nodes()}\n"
         info_string += f"weighted adjacency matrix: \n\n"
-        info_string += self.display_sub_adj(3)
+        # info_string += self.display_sub_adj(3)
         return info_string
 
 
@@ -258,9 +258,9 @@ options = {
     'width': 1,
 }
 
-k = 6
+k = 5
 
-TestGraph = G_mi(k, 1, "General")
+TestGraph = G_mi(k, 4, "General")
 TestGraph.gen_total_nodes()
 TestGraph.initalize_graph()
 
@@ -309,6 +309,7 @@ for i, shell in enumerate(shells):
         pos[node] = (radius * np.cos(shell_angles[i][j]),
                      radius * np.sin(shell_angles[i][j]))
 
+plt.figure(figsize=(7, 7))
 nx.draw(Gr, pos, edge_color=edge_colors, with_labels=False, **options)
 
 print(TestGraph)
